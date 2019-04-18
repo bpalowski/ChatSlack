@@ -1,5 +1,5 @@
 import * as actionTypes from './types';
-
+// USER ACTION
 export const setUser = user => {
 	return {
 		type: actionTypes.SET_USER,
@@ -12,5 +12,16 @@ export const setUser = user => {
 export const clearUser = user => {
 	return {
 		type: actionTypes.CLEAR_USER
+	}
+}
+
+
+// CHANNEL ACTION
+export const setCurrentChannel = channel => {
+	return {
+		type: actionTypes.SET_CURRENT_CHANNEL,
+		payload: {
+			currentChannel: channel
+		}
 	}
 }
