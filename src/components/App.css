@@ -24,3 +24,24 @@ body,
   z-index:200;
 
 }
+
+/* Message.js */
+
+.message__self{
+  border-left: 2px solid brown;
+  padding-left: 8px;
+}
+
+.message__image{
+  padding: 1em;
+}
+
+/* progress bar */
+
+.progress__bar{
+  margin: 0.3em 0 0 0 !important;
+}
+/* Side pannel */
+.menu{
+padding-bottom: 2em;
+}
