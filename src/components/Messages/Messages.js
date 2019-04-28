@@ -1,51 +1,81 @@
-import React, { Component } from 'react'
-import { Segment, Comment } from 'semantic-ui-react';
-import MessagesHeader from './MessagesHeader'
-import MessageForm from './MessageForm'
-import firebase from '../../firebase';
-import Message from './Message'
+import React from "react";
+import { Segment, Comment } from "semantic-ui-react";
+import firebase from "../../firebase";
 
-class Messages extends Component {
+import MessagesHeader from "./MessagesHeader";
+import MessageForm from "./MessageForm";
+import Message from "./Message";
 
+class Messages extends React.Component {
 	state = {
 		privateChannel: this.props.isPrivateChannel,
-		privateMessagesRef: firebase.database().ref('privateMessages'),
-		messagesRef: firebase.database().ref('messages'),
-		channel: this.props.currentChannel,
-		user: this.props.currentUser,
+		privateMessagesRef: firebase.database().ref("privateMessages"),
+		messagesRef: firebase.database().ref("messages"),
 		messages: [],
 		messagesLoading: true,
-		numUniqeUsers: '',
-		searchTerm: '',
+		channel: this.props.currentChannel,
+		user: this.props.currentUser,
+		numUniqueUsers: "",
+		searchTerm: "",
 		searchLoading: false,
 		searchResults: []
-	}
+	};
+
 	componentDidMount() {
-		const { channel, user, messages } = this.state;
+		const { channel, user } = this.state;
 
 		if (channel && user) {
-			this.addListeners(channel.id)
+			this.addListeners(channel.id);
 		}
 	}
 
-
 	addListeners = channelId => {
 		this.addMessageListener(channelId);
-	}
+	};
+
 	addMessageListener = channelId => {
 		let loadedMessages = [];
 		const ref = this.getMessagesRef();
-		ref.child(channelId)
-			.on('child_added', snap => {
-				loadedMessages.push(snap.val())
-				this.setState({
-					messages: loadedMessages,
-					messagesLoading: false
-				})
-				this.countUniqueUsers(loadedMessages)
-			})
-	}
+		ref.child(channelId).on("child_added", snap => {
+			loadedMessages.push(snap.val());
+			this.setState({
+				messages: loadedMessages,
+				messagesLoading: false
+			});
+			this.countUniqueUsers(loadedMessages);
+		});
+	};
 
+	getMessagesRef = () => {
+		const { messagesRef, privateMessagesRef, privateChannel } = this.state;
+		return privateChannel ? privateMessagesRef : messagesRef;
+	};
+
+	handleSearchChange = event => {
+		this.setState(
+			{
+				searchTerm: event.target.value,
+				searchLoading: true
+			},
+			() => this.handleSearchMessages()
+		);
+	};
+
+	handleSearchMessages = () => {
+		const channelMessages = [...this.state.messages];
+		const regex = new RegExp(this.state.searchTerm, "gi");
+		const searchResults = channelMessages.reduce((acc, message) => {
+			if (
+				(message.content && message.content.match(regex)) ||
+				message.user.name.match(regex)
+			) {
+				acc.push(message);
+			}
+			return acc;
+		}, []);
+		this.setState({ searchResults });
+		setTimeout(() => this.setState({ searchLoading: false }), 1000);
+	};
 
 	countUniqueUsers = messages => {
 		const uniqueUsers = messages.reduce((acc, message) => {
@@ -55,84 +85,58 @@ class Messages extends Component {
 			return acc;
 		}, []);
 		const plural = uniqueUsers.length > 1 || uniqueUsers.length === 0;
-		const numUniqeUsers = `${uniqueUsers.length} user${plural ? 's' : ''}`;
-		this.setState({
-			numUniqeUsers
-		})
-	}
+		const numUniqueUsers = `${uniqueUsers.length} user${plural ? "s" : ""}`;
+		this.setState({ numUniqueUsers });
+	};
 
-	handleSearchChange = e => {
-		this.setState({
-			searchTerm: e.target.value,
-			searchLoading: true
-		}, () => this.handleSearchMessages())
-	}
-
-	getMessagesRef = () => {
-		const { messagesRef, privateMessagesRef, privateChannel } = this.state;
-		return privateChannel ? privateMessagesRef : messagesRef;
-	}
-
-	handleSearchMessages = () => {
-		const channelMessages = [...this.state.messages];
-		const regex = new RegExp(this.state.searchTerm, 'gi');
-		const searchResults = channelMessages.reduce((acc, message) => {
-			if (message.content && message.content.match(regex) || message.user.name.match(regex)) {
-				acc.push(message);
-			}
-			return acc;
-		}, [])
-		this.setState({
-			searchResults
-		})
-		setTimeout(() => this.setState({ searchLoading: false }), 1000);
-	}
-
-
-	displayMessages = messages => (
-		messages.length > 0 && messages.map(message => (
+	displayMessages = messages =>
+		messages.length > 0 &&
+		messages.map(message => (
 			<Message
 				key={message.timestamp}
 				message={message}
-				user={this.state.user} />
-		))
-	)
+				user={this.state.user}
+			/>
+		));
+
 	displayChannelName = channel => {
-
-		return channel ? `${this.state.privateChannel ? '@' : '#'}${channel.name}` : '';
-	}
-
+		return channel
+			? `${this.state.privateChannel ? "@" : "#"}${channel.name}`
+			: "";
+	};
 
 	render() {
-		const { messagesRef, messages, channel, user, numUniqeUsers, searchTerm, searchResults, searchLoading, privateChannel } = this.state
+		// prettier-ignore
+		const { messagesRef, messages, channel, user, numUniqueUsers, searchTerm, searchResults, searchLoading, privateChannel } = this.state;
+
 		return (
 			<React.Fragment>
 				<MessagesHeader
-					numUniqeUsers={numUniqeUsers}
 					channelName={this.displayChannelName(channel)}
+					numUniqueUsers={numUniqueUsers}
 					handleSearchChange={this.handleSearchChange}
 					searchLoading={searchLoading}
 					isPrivateChannel={privateChannel}
 				/>
-				<Segment>
-					<Comment.Group
 
-						className="messages">
-						{searchTerm ? this.displayMessages(searchResults) :
-							this.displayMessages(messages)}
+				<Segment>
+					<Comment.Group className="messages">
+						{searchTerm
+							? this.displayMessages(searchResults)
+							: this.displayMessages(messages)}
 					</Comment.Group>
 				</Segment>
+
 				<MessageForm
 					messagesRef={messagesRef}
 					currentChannel={channel}
 					currentUser={user}
-					searchLoading={searchLoading}
 					isPrivateChannel={privateChannel}
-					getMessagesRef={this.getMessagesRef} />
+					getMessagesRef={this.getMessagesRef}
+				/>
 			</React.Fragment>
-		)
+		);
 	}
 }
 
-
-export default Messages
+export default Messages;
