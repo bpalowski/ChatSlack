@@ -25,4 +25,4 @@ yarn-error.log*
 /.firebaserc
 /firebase.json
 /database.rules.json
-/firebase.js
+
